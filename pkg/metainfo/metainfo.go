@@ -103,7 +103,7 @@ func NewFromFilename(fn string) (*MetaInfo, error) {
 		_ = files
 	}
 
-	return nil, nil
+	return m, nil
 }
 
 func (m *MetaInfo) String() string {
