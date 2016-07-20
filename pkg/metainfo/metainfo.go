@@ -164,7 +164,7 @@ func (m *MetaInfo) String() string {
 			ret += fmt.Sprintf("    MD5(opt): %v\n", f.MD5Sum)
 		}
 	}
-	ret += fmt.Sprintf("Pieces: %v\n", len(m.Pieces))
+	ret += fmt.Sprintf("Pieces: %v\n", len(m.Pieces)/20)
 	ret += fmt.Sprintf("Piece Len: %v\n", m.PieceLength)
 	ret += fmt.Sprintf("Private: %v\n", m.Private)
 	return ret

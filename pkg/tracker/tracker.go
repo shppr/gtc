@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	peerID = "-TR2920-" // transmission 2.920 :~)
+	PeerID = "-TR2920-" // transmission 2.920 :~)
 )
 
 func FindPeers(m *metainfo.MetaInfo) []*peer.Peer {
@@ -35,7 +35,7 @@ func FindPeers(m *metainfo.MetaInfo) []*peer.Peer {
 	}
 
 	reqURL += fmt.Sprintf("?info_hash=%s", url.QueryEscape(string(m.InfoHash[:])))
-	reqURL += fmt.Sprintf("&peer_id=%s", peerID+url.QueryEscape(util.SessionID(12)))
+	reqURL += fmt.Sprintf("&peer_id=%s", PeerID+url.QueryEscape(util.SessionID(12)))
 	reqURL += "&uploaded=0&downloaded=0&port=6881"
 	if l := len(m.Files); l == 1 {
 		reqURL += fmt.Sprintf("&left=%v", m.Files[0].Length)
@@ -63,6 +63,8 @@ func FindPeers(m *metainfo.MetaInfo) []*peer.Peer {
 	return peerList
 }
 
+// Find peers from the tracker announce response
+// p can be a string (&compact=1) or later a dictionary
 func GetPeerList(p interface{}) ([]*peer.Peer, error) {
 	pl := []*peer.Peer{}
 	switch peers := p.(type) {
@@ -76,6 +78,7 @@ func GetPeerList(p interface{}) ([]*peer.Peer, error) {
 			pl = append(pl, peer)
 		}
 	case []interface{}: // []dict format
+		//doesnt happen because we only support &compact=1 anyway for now
 
 	}
 	return pl, nil

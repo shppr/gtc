@@ -7,6 +7,7 @@ import (
 
 	"github.com/mbags/gtc/pkg/metainfo"
 	"github.com/mbags/gtc/pkg/tracker"
+	"github.com/mbags/gtc/pkg/util"
 )
 
 func main() {
@@ -18,10 +19,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Couldnt created metainfo for %v", os.Args[1])
 	}
+	// pretty print the parsed .torrent
 	fmt.Println(m)
-	// fetch initial peers
+	// fetch & print initial peers
 	peerList := tracker.FindPeers(m)
 	for _, peer := range peerList {
 		fmt.Printf("Peer %v\n", peer)
+		go peer.Connect(m.InfoHash[:], []byte(tracker.PeerID+util.SessionID(12)))
 	}
+
+	select {}
 }
