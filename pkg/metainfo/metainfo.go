@@ -2,6 +2,7 @@
 package metainfo
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"os"
 	"time"
@@ -20,6 +21,7 @@ type MetaInfo struct {
 	Encoding     string
 	Files        []File
 	Name         string // Single File - name, Multi file - dirname
+	InfoHash     [20]byte
 }
 
 // Info fields common to both single and multi file info dictionary
@@ -81,6 +83,8 @@ func NewFromFilename(fn string) (*MetaInfo, error) {
 
 	// begin populating the Info dict
 	info := data["info"].(map[string]interface{})
+	infoHash := sha1.Sum(bencode.Encode(info))
+	m.InfoHash = infoHash
 
 	if name, ok := info["name"]; ok {
 		m.Name = name.(string)
