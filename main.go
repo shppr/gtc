@@ -12,19 +12,18 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage : gtc <torrent>")
+		fmt.Println("usage: gtc <torrent>")
 		return
 	}
 	m, err := metainfo.NewFromFilename(os.Args[1])
 	if err != nil {
-		log.Fatalf("Couldnt created metainfo for %v", os.Args[1])
+		log.Fatalf("Couldnt create metainfo for %v", os.Args[1])
 	}
 	// pretty print the parsed .torrent
 	fmt.Println(m)
 	// fetch & print initial peers
 	peerList := tracker.FindPeers(m)
 	for _, peer := range peerList {
-		fmt.Printf("Peer %v\n", peer)
 		go peer.Connect(m.InfoHash[:], []byte(tracker.PeerID+util.SessionID(12)))
 	}
 

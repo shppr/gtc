@@ -79,7 +79,7 @@ func GetPeerList(p interface{}) ([]*peer.Peer, error) {
 		}
 	case []interface{}: // []dict format
 		//doesnt happen because we only support &compact=1 anyway for now
-
+		fmt.Println("peers in dict format")
 	}
 	return pl, nil
 }
