@@ -19,7 +19,7 @@ type Peer struct {
 }
 
 // Connect connects to a peer, handshakes, and checks for matching infohash
-func (p *Peer) Connect(infoHash, peerID []byte) error {
+func (p *Peer) Connect(infoHash, peerID []byte) {
 	buf := bytes.Buffer{}
 	buf.WriteByte(19)
 	buf.WriteString("BitTorrent protocol\x00\x00\x00\x00\x00\x00\x00\x00")
@@ -29,14 +29,14 @@ func (p *Peer) Connect(infoHash, peerID []byte) error {
 
 	conn, err := net.Dial("tcp", p.IP.String()+":"+strconv.Itoa(int(p.Port)))
 	if err != nil {
-		return err
+		return
 	}
 
 	// do handshake
 
 	if _, err := conn.Write(handshake); err != nil {
 		log.Printf("Send handshake failed w/ : %v\n", p.IP)
-		return err
+		return
 	}
 
 	p.Conn = conn
@@ -44,7 +44,7 @@ func (p *Peer) Connect(infoHash, peerID []byte) error {
 	res, err := p.readN(68)
 	if err != nil {
 		log.Printf("Couldnt get handshake response from: %v\n", p.IP)
-		return err
+		return
 	}
 
 	// TODO cut up the handshake and set fields in peer
@@ -53,7 +53,6 @@ func (p *Peer) Connect(infoHash, peerID []byte) error {
 		p.ID = string(res[48:])
 	}
 	log.Printf("Connected to peer: %v", p.IP)
-	return nil
 }
 
 func (p *Peer) readN(n int) ([]byte, error) {
