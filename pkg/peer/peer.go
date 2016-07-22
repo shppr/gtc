@@ -18,6 +18,7 @@ type Peer struct {
 	// need choke and interest states here
 }
 
+// Connect connects to a peer, handshakes, and checks for matching infohash
 func (p *Peer) Connect(infoHash, peerID []byte) error {
 	buf := bytes.Buffer{}
 	buf.WriteByte(19)
@@ -32,11 +33,12 @@ func (p *Peer) Connect(infoHash, peerID []byte) error {
 	}
 
 	// do handshake
-	go func() {
-		if _, err := conn.Write(handshake); err != nil {
-			log.Printf("Send handshake failed w/ : %v\n", p.IP)
-		}
-	}()
+
+	if _, err := conn.Write(handshake); err != nil {
+		log.Printf("Send handshake failed w/ : %v\n", p.IP)
+		return err
+	}
+
 	p.Conn = conn
 
 	res, err := p.readN(68)
