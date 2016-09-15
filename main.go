@@ -22,7 +22,12 @@ func main() {
 	// pretty print the parsed .torrent
 	fmt.Println(m)
 	// fetch & print initial peers
-	peerList := tracker.FindPeers(m)
+	peerList, err := tracker.FindPeers(m)
+    if err != nil {
+        log.Fatalf("Couldn't get the peers list")
+        return
+    }
+
 	for _, peer := range peerList {
 		go peer.Connect(m.InfoHash[:], []byte(tracker.PeerID+util.SessionID(12)))
 	}
