@@ -15,8 +15,10 @@ type Peer struct {
 	Port uint16
 	Conn net.Conn
 	ID   string
-
-	// need choke and interest states here
+    am_choking bool
+    am_interested bool
+    peer_choking bool
+    peer_interested bool
 }
 
 // Connect connects to a peer, handshakes, and checks for matching infohash
@@ -95,12 +97,16 @@ func (p *Peer) readMessages(conn net.Conn) {
 
         switch messageID {
             case 0:
+                p.peer_choking = true
                 log.Printf("Chocked by peer %s\n", p.IP)
             case 1:
+                p.peer_choking = false
                 log.Printf("Unchocked by peer %s\n", p.IP)
             case 2:
+                p.peer_interested = true
                 log.Printf("Interested message by peer %s\n", p.IP)
             case 3:
+                p.peer_interested = false
                 log.Printf("Not interested message by peer %s\n", p.IP)
             case 4:
                 log.Printf("Have message from peer %s\n", p.IP)
