@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"strconv"
+    "github.com/mbags/gtc/pkg/bitfield"
+    "github.com/mbags/gtc/pkg/util"
 )
 
 // Peer A peer to connect to
@@ -15,6 +17,7 @@ type Peer struct {
 	Port uint16
 	Conn net.Conn
 	ID   string
+    Bitfield bitfield.Bitfield
 
 	// need choke and interest states here
 }
@@ -103,8 +106,10 @@ func (p *Peer) readMessages(conn net.Conn) {
             case 3:
                 log.Printf("Not interested message by peer %s\n", p.IP)
             case 4:
-                log.Printf("Have message from peer %s\n", p.IP)
+                p.Bitfield.Set(util.BytesToInt(connectionResponseBytes))
+                log.Printf("Have [%d] message from peer %s\n", util.BytesToInt(connectionResponseBytes), p.IP)
             case 5:
+                p.Bitfield.Bits = connectionResponseBytes
                 log.Printf("Bitfield message from peer %s\n", p.IP)
             case 6:
                 log.Printf("Request message from peer %s\n", p.IP)
