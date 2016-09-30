@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"strconv"
+    "github.com/mbags/gtc/pkg/bitfield"
+    "github.com/mbags/gtc/pkg/util"
 )
 
 // Peer A peer to connect to
@@ -15,10 +17,16 @@ type Peer struct {
 	Port uint16
 	Conn net.Conn
 	ID   string
+<<<<<<< HEAD
     am_choking bool
     am_interested bool
     peer_choking bool
     peer_interested bool
+=======
+    Bitfield bitfield.Bitfield
+
+	// need choke and interest states here
+>>>>>>> 17893a03028c5b051a70ba626a6afee6e6927b93
 }
 
 // Connect connects to a peer, handshakes, and checks for matching infohash
@@ -109,8 +117,10 @@ func (p *Peer) readMessages(conn net.Conn) {
                 p.peer_interested = false
                 log.Printf("Not interested message by peer %s\n", p.IP)
             case 4:
-                log.Printf("Have message from peer %s\n", p.IP)
+                p.Bitfield.Set(util.BytesToInt(connectionResponseBytes))
+                log.Printf("Have [%d] message from peer %s\n", util.BytesToInt(connectionResponseBytes), p.IP)
             case 5:
+                p.Bitfield.Bits = connectionResponseBytes
                 log.Printf("Bitfield message from peer %s\n", p.IP)
             case 6:
                 log.Printf("Request message from peer %s\n", p.IP)
