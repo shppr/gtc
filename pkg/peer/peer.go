@@ -1,32 +1,30 @@
 package peer
 
 import (
-    "encoding/binary"
 	"bytes"
+	"encoding/binary"
 	"io"
 	"log"
 	"net"
 	"strconv"
-    "github.com/mbags/gtc/pkg/bitfield"
-    "github.com/mbags/gtc/pkg/util"
+
+	"github.com/mbags/gtc/pkg/bitfield"
+	"github.com/mbags/gtc/pkg/util"
 )
 
 // Peer A peer to connect to
 type Peer struct {
-	IP   net.IP
-	Port uint16
-	Conn net.Conn
-	ID   string
-<<<<<<< HEAD
-    am_choking bool
-    am_interested bool
-    peer_choking bool
-    peer_interested bool
-=======
-    Bitfield bitfield.Bitfield
+	IP             net.IP
+	Port           uint16
+	Conn           net.Conn
+	ID             string
+	amChoking      bool
+	amInterested   bool
+	peerChoking    bool
+	peerInterested bool
+	Bitfield       bitfield.Bitfield
 
 	// need choke and interest states here
->>>>>>> 17893a03028c5b051a70ba626a6afee6e6927b93
 }
 
 // Connect connects to a peer, handshakes, and checks for matching infohash
@@ -38,16 +36,16 @@ func (p *Peer) Connect(infoHash, peerID []byte) {
 	buf.Write(peerID)
 	handshake := buf.Bytes()
 
-    log.Printf("Connecting to %s\n", p.IP)
+	log.Printf("Connecting to %s\n", p.IP)
 	conn, err := net.Dial("tcp", p.IP.String()+":"+strconv.Itoa(int(p.Port)))
 	if err != nil {
-        log.Printf("Couldn't connect to %s\n", p.IP)
+		log.Printf("Couldn't connect to %s\n", p.IP)
 		return
 	}
 
 	// do handshake
 
-    log.Printf("Sending handshake to %s\n", p.IP)
+	log.Printf("Sending handshake to %s\n", p.IP)
 	if _, err := conn.Write(handshake); err != nil {
 		log.Printf("Send handshake failed w/ : %v\n", p.IP)
 		return
@@ -67,71 +65,71 @@ func (p *Peer) Connect(infoHash, peerID []byte) {
 		p.ID = string(res[48:])
 	}
 	log.Printf("Connected to peer: %v", p.IP)
-    p.readMessages(conn)
+	p.readMessages(conn)
 }
 
 func (p *Peer) readMessages(conn net.Conn) {
-    var connectionResponseBytes = make([]byte, 4)
-    var messageID byte
-    var length uint32
-    var err error
+	var connectionResponseBytes = make([]byte, 4)
+	var messageID byte
+	var length uint32
+	var err error
 
-    for {
-        connectionResponseBytes = make([]byte, 4)
-        _, err = conn.Read(connectionResponseBytes)
-        if err != nil {
-            log.Println("Error receiving response")
-        }
-        connectionResponse := bytes.NewBuffer(connectionResponseBytes)
-        err = binary.Read(connectionResponse, binary.BigEndian, &length)
-        if err != nil {
-            return
-        }
-        if length == 0 {
-            log.Printf("Keep-alive message from peer %s\n", p.IP)
-            continue
-        }
-        connectionResponseBytes = make([]byte, 1)
-        _, err = conn.Read(connectionResponseBytes)
-        connectionResponse = bytes.NewBuffer(connectionResponseBytes)
-        err = binary.Read(connectionResponse, binary.BigEndian, &messageID)
-        if err != nil {
-            log.Printf("Error receiving message id from peer %s\n", p.IP)
-            return
-        }
+	for {
+		connectionResponseBytes = make([]byte, 4)
+		_, err = conn.Read(connectionResponseBytes)
+		if err != nil {
+			log.Println("Error receiving response")
+		}
+		connectionResponse := bytes.NewBuffer(connectionResponseBytes)
+		err = binary.Read(connectionResponse, binary.BigEndian, &length)
+		if err != nil {
+			return
+		}
+		if length == 0 {
+			log.Printf("Keep-alive message from peer %s\n", p.IP)
+			continue
+		}
+		connectionResponseBytes = make([]byte, 1)
+		_, err = conn.Read(connectionResponseBytes)
+		connectionResponse = bytes.NewBuffer(connectionResponseBytes)
+		err = binary.Read(connectionResponse, binary.BigEndian, &messageID)
+		if err != nil {
+			log.Printf("Error receiving message id from peer %s\n", p.IP)
+			return
+		}
 
-        connectionResponseBytes = make([]byte, length - 1)
-        _, err = conn.Read(connectionResponseBytes)
+		connectionResponseBytes = make([]byte, length-1)
+		_, err = conn.Read(connectionResponseBytes)
 
-        switch messageID {
-            case 0:
-                p.peer_choking = true
-                log.Printf("Chocked by peer %s\n", p.IP)
-            case 1:
-                p.peer_choking = false
-                log.Printf("Unchocked by peer %s\n", p.IP)
-            case 2:
-                p.peer_interested = true
-                log.Printf("Interested message by peer %s\n", p.IP)
-            case 3:
-                p.peer_interested = false
-                log.Printf("Not interested message by peer %s\n", p.IP)
-            case 4:
-                p.Bitfield.Set(util.BytesToInt(connectionResponseBytes))
-                log.Printf("Have [%d] message from peer %s\n", util.BytesToInt(connectionResponseBytes), p.IP)
-            case 5:
-                p.Bitfield.Bits = connectionResponseBytes
-                log.Printf("Bitfield message from peer %s\n", p.IP)
-            case 6:
-                log.Printf("Request message from peer %s\n", p.IP)
-            case 7:
-                log.Printf("Piece message from peer %s\n", p.IP)
-            case 8:
-                log.Printf("Cancel message from peer %s\n", p.IP)
-            default:
-                log.Printf("Message id %d received from peer %s\n", messageID, p.IP)
-        }
-    }
+		switch messageID {
+		case 0:
+			p.peerChoking = true
+			log.Printf("Chocked by peer %s\n", p.IP)
+		case 1:
+			p.peerChoking = false
+			log.Printf("Unchocked by peer %s\n", p.IP)
+		case 2:
+			p.peerInterested = true
+			log.Printf("Interested message by peer %s\n", p.IP)
+		case 3:
+			p.peerInterested = false
+			log.Printf("Not interested message by peer %s\n", p.IP)
+		case 4:
+			p.Bitfield.Set(util.BytesToInt(connectionResponseBytes))
+			log.Printf("Have [%d] message from peer %s\n", util.BytesToInt(connectionResponseBytes), p.IP)
+		case 5:
+			p.Bitfield.Bits = connectionResponseBytes
+			log.Printf("Bitfield message from peer %s\n", p.IP)
+		case 6:
+			log.Printf("Request message from peer %s\n", p.IP)
+		case 7:
+			log.Printf("Piece message from peer %s\n", p.IP)
+		case 8:
+			log.Printf("Cancel message from peer %s\n", p.IP)
+		default:
+			log.Printf("Message id %d received from peer %s\n", messageID, p.IP)
+		}
+	}
 }
 
 func (p *Peer) readN(n int) ([]byte, error) {
