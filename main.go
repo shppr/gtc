@@ -29,7 +29,7 @@ func main() {
     }
 
 	for _, peer := range peerList {
-		go peer.Connect(m.InfoHash[:], []byte(tracker.PeerID+util.SessionID(12)))
+		go peer.Connect([]byte(m.InfoHash), []byte(tracker.PeerID+util.SessionID(12)))
 	}
 
 	select {}

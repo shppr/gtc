@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"time"
+    "bytes"
+    "errors"
 
-	"github.com/marksamman/bencode"
+    bencode	"github.com/jackpal/bencode-go"
 )
 
 // MetaInfo a mapping of a .torrent file to a struct
@@ -21,7 +23,7 @@ type MetaInfo struct {
 	Encoding     string
 	Files        []File
 	Name         string // Single File - name, Multi file - dirname
-	InfoHash     [20]byte
+	InfoHash     string
 }
 
 // Info fields common to both single and multi file info dictionary
@@ -45,11 +47,17 @@ func NewFromFilename(fn string) (*MetaInfo, error) {
 	}
 	defer file.Close()
 
-	data, err := bencode.Decode(file)
+	d, err := bencode.Decode(file)
+    file.Close()
 	if err != nil {
 		return nil, err
 	}
 
+    data, ok := d.(map[string]interface{})
+    if !ok {
+        fmt.Println("Couldn't parse torrent file")
+        return nil, errors.New("Error parsing torrent file")
+    }
 	m := &MetaInfo{}
 
 	// Populate Announce or AnnounceList
@@ -83,8 +91,16 @@ func NewFromFilename(fn string) (*MetaInfo, error) {
 
 	// begin populating the Info dict
 	info := data["info"].(map[string]interface{})
-	infoHash := sha1.Sum(bencode.Encode(info))
-	m.InfoHash = infoHash
+    var infoHash bytes.Buffer
+	err = bencode.Marshal(&infoHash, info)
+    if err != nil {
+        fmt.Println("Coudn't encode infohash")
+        return nil, err
+    }
+    hash := sha1.New()
+    hash.Write(infoHash.Bytes())
+
+	m.InfoHash = string(hash.Sum(nil))
 
 	if name, ok := info["name"]; ok {
 		m.Name = name.(string)
