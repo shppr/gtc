@@ -12,6 +12,12 @@ import (
 	"github.com/mbags/gtc/pkg/util"
 )
 
+/*
+A block is downloaded by the client when the client is interested in a peer, and that peer is not choking the client. A block is uploaded by a client when the client is not choking a peer, and that peer is interested in the client.
+
+It is important for the client to keep its peers informed as to whether or not it is interested in them. This state information should be kept up-to-date with each peer even when the client is choked. This will allow peers to know if the client will begin downloading when it is unchoked (and vice-versa).
+*/
+
 // Peer A peer to connect to
 type Peer struct {
 	IP             net.IP
@@ -23,12 +29,10 @@ type Peer struct {
 	peerChoking    bool
 	peerInterested bool
 	Bitfield       bitfield.Bitfield
-
-	// need choke and interest states here
 }
 
 // Connect connects to a peer, handshakes, and checks for matching infohash
-func (p *Peer) Connect(infoHash, peerID []byte) {
+func (p *Peer) Connect(infoHash, peerID []byte, activate, deactivate chan<- *Peer) {
 	buf := bytes.Buffer{}
 	buf.WriteByte(19)
 	buf.WriteString("BitTorrent protocol\x00\x00\x00\x00\x00\x00\x00\x00")
@@ -63,12 +67,13 @@ func (p *Peer) Connect(infoHash, peerID []byte) {
 
 	if peerInfoHash := string(res[28:48]); peerInfoHash == string(infoHash) {
 		p.ID = string(res[48:])
+		p.amInterested = true
 	}
 	log.Printf("Connected to peer: %v", p.IP)
-	p.readMessages(conn)
+	p.readMessages(conn, activate, deactivate)
 }
 
-func (p *Peer) readMessages(conn net.Conn) {
+func (p *Peer) readMessages(conn net.Conn, activate, deactivate chan<- *Peer) {
 	var connectionResponseBytes = make([]byte, 4)
 	var messageID byte
 	var length uint32
@@ -104,30 +109,34 @@ func (p *Peer) readMessages(conn net.Conn) {
 		switch messageID {
 		case 0:
 			p.peerChoking = true
-			log.Printf("Chocked by peer %s\n", p.IP)
+			log.Printf("Choked by peer %s :: %s\n", p.IP, p.ID)
+			deactivate <- p
 		case 1:
 			p.peerChoking = false
-			log.Printf("Unchocked by peer %s\n", p.IP)
+			log.Printf("Unchoked by peer %s :: %s\n", p.IP, p.ID)
+			activate <- p
 		case 2:
 			p.peerInterested = true
-			log.Printf("Interested message by peer %s\n", p.IP)
+			log.Printf("Interested message by peer %s :: %s\n", p.IP, p.ID)
 		case 3:
 			p.peerInterested = false
-			log.Printf("Not interested message by peer %s\n", p.IP)
+			log.Printf("Not interested message by peer %s :: %s\n", p.IP, p.ID)
 		case 4:
 			p.Bitfield.Set(util.BytesToInt(connectionResponseBytes))
-			log.Printf("Have [%d] message from peer %s\n", util.BytesToInt(connectionResponseBytes), p.IP)
+			log.Printf("Have [%d] message from peer %s :: %s\n", util.BytesToInt(connectionResponseBytes), p.IP, p.ID)
 		case 5:
 			p.Bitfield.Bits = connectionResponseBytes
-			log.Printf("Bitfield message from peer %s\n", p.IP)
+			log.Printf("Bitfield message from peer %s :: %s\n", p.IP, p.ID)
 		case 6:
-			log.Printf("Request message from peer %s\n", p.IP)
+			log.Printf("Request message from peer %s :: %s\n", p.IP, p.ID)
 		case 7:
-			log.Printf("Piece message from peer %s\n", p.IP)
+			log.Printf("Piece message from peer %s :: %s\n", p.IP, p.ID)
 		case 8:
-			log.Printf("Cancel message from peer %s\n", p.IP)
+			log.Printf("Cancel message from peer %s :: %s\n", p.IP, p.ID)
+		case 9: // for DHT later
+			log.Printf("Port message from %s :: %s\n", p.IP, p.ID)
 		default:
-			log.Printf("Message id %d received from peer %s\n", messageID, p.IP)
+			log.Printf("Message id %d received from peer %s :: %s\n", messageID, p.IP, p.ID)
 		}
 	}
 }
