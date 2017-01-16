@@ -63,6 +63,6 @@ func (t *Torrent) Start() {
 		}
 	}()
 
-	// daemon for downloading chunks
+	// TODO daemon for downloading chunks
 	go func() {}()
 }
